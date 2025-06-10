@@ -28,7 +28,7 @@ RUN --mount=type=cache,target=/var/lib/apt,sharing=locked \
     git
 
 COPY ./app/pyproject.toml ./app/poetry.lock /usr/src/app/
-# RUN poetry install
+RUN poetry install
 
 COPY ./ /usr/src/
 
