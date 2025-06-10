@@ -28,7 +28,7 @@ RUN --mount=type=cache,target=/var/lib/apt,sharing=locked \
 COPY ./app/pyproject.toml /usr/src/app/
 RUN uv pip install --system --no-cache-dir --no-compile . --group dev
 
-COPY ./ /usr/src/app/
+COPY ./ /usr/src/
 
 
 # 本番用ステージ (dev依存なし)
@@ -38,5 +38,5 @@ WORKDIR /usr/src/app
 COPY --from=prod-deps /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
 COPY --from=prod-deps /usr/local/bin /usr/local/bin
 
-COPY ./ /usr/src/app/
+COPY ./app /usr/src/app
 # CMD [""]
