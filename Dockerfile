@@ -14,7 +14,7 @@ FROM base AS prod-deps
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
 COPY ./app/pyproject.toml /usr/src/app/
-RUN uv pip install --system --no-cache-dir --no-compile
+RUN uv pip install --system --no-cache-dir --no-compile .
 
 # 開発用ステージ
 FROM base AS develop
@@ -26,7 +26,7 @@ RUN --mount=type=cache,target=/var/lib/apt,sharing=locked \
     git
 
 COPY ./app/pyproject.toml /usr/src/app/
-RUN uv pip install --system --no-cache-dir --no-compile --group dev
+RUN uv pip install --system --no-cache-dir --no-compile . --group dev
 
 COPY ./ /usr/src/app/
 
