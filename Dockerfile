@@ -11,22 +11,24 @@ RUN --mount=type=cache,target=/var/lib/apt,sharing=locked \
 
 # 依存解決 (本番用: 通常依存 only)
 FROM base AS prod-deps
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+COPY --from=goegoe0212/poetry-image:latest /root/.local /root/.local
+RUN poetry config virtualenvs.create false
 
-COPY ./app/pyproject.toml /usr/src/app/
-RUN uv pip install --system --no-cache-dir --no-compile .
+COPY ./app/pyproject.toml .app/poetry.lock /usr/src/app/
+RUN poetry install --without dev
 
 # 開発用ステージ
 FROM base AS develop
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+COPY --from=goegoe0212/poetry-image:latest /root/.local /root/.local
+RUN poetry config virtualenvs.create false
 
 RUN --mount=type=cache,target=/var/lib/apt,sharing=locked \
     --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get update && apt-get install -y --no-install-recommends \
     git
 
-COPY ./app/pyproject.toml /usr/src/app/
-RUN uv pip install --system --no-cache-dir --no-compile . --group dev
+COPY ./app/pyproject.toml .app/poetry.lock /usr/src/app/
+# RUN poetry install
 
 COPY ./ /usr/src/
 
