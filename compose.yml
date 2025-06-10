@@ -1,0 +1,11 @@
+services:
+  fastapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: develop
+    environment:
+      - TZ=Asia/Tokyo
+    tty: true
+    stdin_open: true
+    command: /bin/bash
