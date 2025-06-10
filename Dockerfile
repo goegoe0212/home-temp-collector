@@ -14,7 +14,7 @@ FROM base AS prod-deps
 COPY --from=goegoe0212/poetry-image:latest /root/.local /root/.local
 RUN poetry config virtualenvs.create false
 
-COPY ./app/pyproject.toml .app/poetry.lock /usr/src/app/
+COPY ./app/pyproject.toml ./app/poetry.lock /usr/src/app/
 RUN poetry install --without dev
 
 # 開発用ステージ
@@ -27,7 +27,7 @@ RUN --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && apt-get install -y --no-install-recommends \
     git
 
-COPY ./app/pyproject.toml .app/poetry.lock /usr/src/app/
+COPY ./app/pyproject.toml ./app/poetry.lock /usr/src/app/
 # RUN poetry install
 
 COPY ./ /usr/src/
