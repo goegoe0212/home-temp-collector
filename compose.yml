@@ -6,6 +6,7 @@ services:
       target: develop
     environment:
       - TZ=Asia/Tokyo
+      - NATURE_API_KEY=${NATURE_API_KEY}
     tty: true
     stdin_open: true
     command: /bin/bash

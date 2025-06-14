@@ -6,6 +6,7 @@ services:
       target: production
     environment:
       - TZ=Asia/Tokyo
+      - NATURE_API_KEY=${NATURE_API_KEY}
     logging:
       driver: "json-file"
       options:
