@@ -1,11 +1,10 @@
-import logging
-
 import psycopg
 import requests
 
+from modules.log_module import log_application
 from settings.config import settings
 
-logger = logging.getLogger(__name__)
+logger = log_application(__name__)
 
 
 def get_call_natureapi(api_url: str) -> dict | None:
