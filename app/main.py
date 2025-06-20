@@ -1,11 +1,10 @@
-import logging
-
 import psycopg
 import requests
 
+from modules.log_module import log_application
 from settings.config import settings
 
-logger = logging.getLogger(__name__)
+logger = log_application(__name__)
 
 
 def get_call_natureapi(api_url: str) -> dict | None:
@@ -42,8 +41,8 @@ def get_temperature(data: dict) -> tuple | None:
     illuminance = None
     try:
         # 温度データを取得
-        device_info = data[0]  # 最初のデバイス情報を取得
-        newest_events = device_info.get("newest_events", {})
+        device_info = [device for device in data if device.get("name") == settings.nature_device_name]
+        newest_events = device_info[0].get("newest_events", {})
         temperature = newest_events.get("te", {}).get("val")
         humidity = newest_events.get("hu", {}).get("val")
         illuminance = newest_events.get("il", {}).get("val")
