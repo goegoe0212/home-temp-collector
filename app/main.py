@@ -1,95 +1,55 @@
-import psycopg
-import requests
-
+from modules.api_module import get_call_natureapi
+from modules.extract_data_module import get_power_consumption, get_temperature
 from modules.log_module import log_application
-from settings.config import settings
+from modules.postgres_module import execute_query
 
 logger = log_application(__name__)
 
 
-def get_call_natureapi(api_url: str) -> dict | None:
-    """Nature APIを呼び出す関数"""
-    data = None
-    try:
-        # Header情報を設定
-        headers = {
-            "accept": "application/json",
-            "Authorization": f"Bearer {settings.nature_api_key}",
-        }
-
-        # GETリクエストを送信
-        response = requests.get(api_url, headers=headers, timeout=10)
-        response.raise_for_status()
-        data = response.json()
-
-    except requests.exceptions.HTTPError:
-        logger.exception("HTTPエラーが発生しました")
-    except requests.exceptions.ConnectionError:
-        logger.exception("接続エラーが発生しました")
-    except requests.exceptions.Timeout:
-        logger.exception("タイムアウトエラーが発生しました")
-    except requests.exceptions.RequestException:
-        logger.exception("予期せぬエラーが発生しました")
-
-    return data
-
-
-def get_temperature(data: dict) -> tuple | None:
-    """データから温度を取得する関数"""
-    temperature = None
-    humidity = None
-    illuminance = None
-    try:
-        # 温度データを取得
-        device_info = [device for device in data if device.get("name") == settings.nature_device_name]
-        newest_events = device_info[0].get("newest_events", {})
-        temperature = newest_events.get("te", {}).get("val")
-        humidity = newest_events.get("hu", {}).get("val")
-        illuminance = newest_events.get("il", {}).get("val")
-
-    except Exception:
-        logger.exception("温度データの変換に失敗しました。")
-        return None
-
-    return temperature, humidity, illuminance
-
-
-def post_to_db(temperature: float, humidity: float, illuminance: int) -> None:
-    """データをPostgreSQLデータベースに保存する関数"""
-    # 接続情報を適宜設定
-    dsn = (
-        f"dbname={settings.postgresql_dbname} "
-        f"user={settings.postgresql_user} "
-        f"password={settings.postgresql_password} "
-        f"host={settings.postgresql_host} "
-        f"port={settings.postgresql_port}"
-    )
-
-    with psycopg.connect(dsn) as conn, conn.cursor() as cur:
-        try:
-            cur.execute(
-                "SELECT temp_sensor.insert_t_temperature(%s, %s, %s);",
-                (temperature, humidity, illuminance),
-            )
-            conn.commit()
-            logger.info("データベースに関数が正常に呼び出されました。")
-        except Exception:
-            logger.exception("データベースへの挿入に失敗しました")
-            conn.rollback()
-
-
-if __name__ == "__main__":
-    logger.info("スクリプトを実行しています...")
+def get_remo_data() -> None:
     url = "https://api.nature.global/1/devices"
     data = get_call_natureapi(url)
 
     if data is None:
-        logger.error("データの取得に失敗しました。")
+        logger.error("Remoのデータ取得に失敗しました。")
+
     else:
         result = get_temperature(data)
         if result is None:
             logger.error("温度データの取得に失敗しました。")
+
         else:
-            temperature, humidity, illuminance = result
-            post_to_db(temperature, humidity, illuminance)
+            logger.info("温度データの取得に成功しました。")
+            logger.info("温度: %s, 湿度: %s, 照度: %s", *result)
+            # データベースに挿入
+            insert_query = "SELECT temp_sensor.insert_t_temperature(%s, %s, %s);"
+            with execute_query(insert_query, result) as cur:
+                logger.info(cur.rowcount)
+
+
+def get_remo_e_data() -> None:
+    url = "https://api.nature.global/1/appliances"
+    data = get_call_natureapi(url)
+
+    if data is None:
+        logger.error("Remo Eのデータ取得に失敗しました。")
+
+    else:
+        result = get_power_consumption(data)
+        if result is None:
+            logger.error("瞬時電力データの取得に失敗しました。")
+
+        else:
+            logger.info("瞬時電力データの取得に成功しました。")
+            logger.info("瞬時電力: %s W", result)
+            # データベースに挿入
+            insert_query = "SELECT temp_sensor.insert_t_power_consumption(%s);"
+            with execute_query(insert_query, (result,)) as cur:
+                logger.info(cur.rowcount)
+
+
+if __name__ == "__main__":
+    logger.info("スクリプトを実行しています...")
+    get_remo_data()
+    get_remo_e_data()
     logger.info("処理が完了しました。")
